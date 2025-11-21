@@ -1,23 +1,22 @@
-# Use the Eclipse Temurin JDK (alpine)
-FROM eclipse-temurin:21-jdk-alpine
-
-# Create and change to the app directory.
+# Build stage: use official Maven image to build the Quarkus app
+FROM maven:3.8.6-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copy the whole project into the image
+# Copy project files and build
 COPY . .
+# Ensure the local lib (ojdbc) is present; we don't need install-file here
+RUN mvn -B -DskipTests clean package
 
-# Make the Maven wrapper executable
-RUN chmod +x mvnw
+# Run stage: smaller JRE image with the built artifact
+FROM eclipse-temurin:21-jdk-alpine
+WORKDIR /app
 
-# Build the app using the Maven wrapper (no need for a global 'mvn')
-# - skip tests to speed up the build (remove -DskipTests if you want to run tests)
-RUN ./mvnw -DoutputFile=target/mvn-dependency-list.log -B -DskipTests clean package
+# Copy app jar and lib from build stage
+COPY --from=build /app/target/quarkus-app /app/target/quarkus-app
+# If you have lib/ojdbc8.jar in repo, copy it too
+COPY lib/ojdbc8.jar /app/lib/ojdbc8.jar
 
-# Ensure ojdbc is available in /app/lib (we copy it as part of the repo)
-# At runtime we add it to the classpath together with the Quarkus runner jar.
 EXPOSE 8080
 
-# Run Quarkus with the Oracle driver on the classpath.
-# Quarkus runner entrypoint class is io.quarkus.bootstrap.runner.QuarkusEntryPoint
-CMD ["sh", "-c", "java -cp /app/lib/ojdbc8.jar:target/quarkus-app/quarkus-run.jar io.quarkus.bootstrap.runner.QuarkusEntryPoint"]
+# Run with ojdbc on the classpath
+CMD ["sh", "-c", "java -cp /app/lib/ojdbc8.jar:/app/target/quarkus-app/quarkus-run.jar io.quarkus.bootstrap.runner.QuarkusEntryPoint"]
