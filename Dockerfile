@@ -1,19 +1,19 @@
-# Build stage: use official Maven image to build the Quarkus app
-FROM maven:3.8.6-eclipse-temurin-21 AS build
+# Build stage: use an official Maven image that exists on Docker Hub
+FROM maven:3.8.8-openjdk-17 AS build
 WORKDIR /app
 
 # Copy project files and build
 COPY . .
-# Ensure the local lib (ojdbc) is present; we don't need install-file here
 RUN mvn -B -DskipTests clean package
 
-# Run stage: smaller JRE image with the built artifact
+# Run stage: smaller JRE image for runtime
 FROM eclipse-temurin:21-jdk-alpine
 WORKDIR /app
 
-# Copy app jar and lib from build stage
+# Copy built quarkus-app from build stage
 COPY --from=build /app/target/quarkus-app /app/target/quarkus-app
-# If you have lib/ojdbc8.jar in repo, copy it too
+
+# Copy Oracle driver (must exist in repo at lib/ojdbc8.jar)
 COPY lib/ojdbc8.jar /app/lib/ojdbc8.jar
 
 EXPOSE 8080
