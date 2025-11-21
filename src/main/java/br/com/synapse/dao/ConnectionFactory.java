@@ -1,11 +1,10 @@
-package br.com.synapse.dao;
+package br.com.synapse.dao; // ajuste o package conforme seu projeto
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class ConnectionFactory {
-
     private static Connection connection;
 
     public static Connection getConnection() {
@@ -14,34 +13,24 @@ public class ConnectionFactory {
                 return connection;
             }
 
-            // Tenta usar driver definido em variável de ambiente, senão usa H2 (padrão do projeto)
-            String driver = System.getenv("DB_DRIVER");
-            if (driver == null) {
-                driver = "org.h2.Driver";
-            }
-            Class.forName(driver);
-
+            // Lê variáveis de ambiente (defina no Render)
             final String URL = System.getenv("DB_URL");
-            final String USERNAME = System.getenv("DB_USER");
-            final String PASSWORD = System.getenv("DB_PASSWORD");
+            final String USER = System.getenv("DB_USER");
+            final String PASS = System.getenv("DB_PASSWORD");
+            final String DRIVER = System.getenv("DB_DRIVER") != null ? System.getenv("DB_DRIVER") : "oracle.jdbc.driver.OracleDriver";
 
-            if (URL == null || USERNAME == null || PASSWORD == null) {
-                // Se não houver variáveis de ambiente e estiver usando H2, usa as configurações padrão em memória
-                if ("org.h2.Driver".equals(driver)) {
-                    connection = DriverManager.getConnection("jdbc:h2:mem:synapse;DB_CLOSE_DELAY=-1", "sa", "");
-                } else {
-                    throw new RuntimeException("Variáveis de ambiente do banco não configuradas.");
-                }
-            } else {
-                connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            if (URL == null || USER == null || PASS == null) {
+                throw new RuntimeException("Variáveis de ambiente do banco não configuradas (DB_URL/DB_USER/DB_PASSWORD).");
             }
 
+            Class.forName(DRIVER);
+            connection = DriverManager.getConnection(URL, USER, PASS);
+            return connection;
         } catch (SQLException e) {
-            System.out.println("Erro de SQL: " + e.getMessage());
+            throw new RuntimeException("Erro de SQL: " + e.getMessage(), e);
         } catch (ClassNotFoundException e) {
-            System.out.println("Erro nome da classe: " + e.getMessage());
+            throw new RuntimeException("Driver JDBC não encontrado: " + e.getMessage(), e);
         }
-        return connection;
     }
 
     public static void closeConnection() {
@@ -49,8 +38,8 @@ public class ConnectionFactory {
             if (connection != null && !connection.isClosed()) {
                 connection.close();
             }
-        } catch (Exception e) {
-            System.out.println("Erro: " + e.getMessage());
+        } catch (SQLException e) {
+            System.err.println("Erro ao fechar conexão: " + e.getMessage());
         }
     }
 }
