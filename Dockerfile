@@ -1,13 +1,11 @@
-# --- Build stage (usa imagem maven oficial para compilar) ---
-FROM maven:3.8.8-openjdk-17 AS build
-
+# Build stage: usa imagem maven para compilar e instalar ojdbc localmente
+FROM maven:3.8.6-jdk-11 AS build
 WORKDIR /app
 
-# Copia o jar do driver Oracle para instalar no repositório local do maven
-# (coloque o ojdbc8.jar em ./lib/ dentro do repositório antes do commit)
+# Copia o driver primeiro (para poder instalar no repo local)
 COPY lib/ojdbc8.jar lib/ojdbc8.jar
 
-# Instala o driver no repositório maven local dentro do container
+# Instala o driver Oracle no repositório local do maven dentro do container
 RUN mvn -B install:install-file \
     -Dfile=lib/ojdbc8.jar \
     -DgroupId=com.oracle \
@@ -15,20 +13,17 @@ RUN mvn -B install:install-file \
     -Dversion=19.3.0.0 \
     -Dpackaging=jar
 
-# Copia todo o projeto
+# Agora copia o resto do projeto e constrói
 COPY . .
-
-# Compila o projeto (gera o jar)
 RUN mvn -B -DskipTests clean package
 
-# --- Run stage (imagem menor para executar) ---
+# Runtime stage (imagem leve)
 FROM eclipse-temurin:17-jre-alpine
-
 WORKDIR /app
 
-# Copia o jar gerado pela fase de build (ajuste o caminho se seu jar estiver em target/<nome>.jar)
-COPY --from=build /app/target/*-runner.jar app.jar
+# Ajuste o caminho de cópia conforme seu build; aqui assumimos quarkus-app
+COPY --from=build /app/target/quarkus-app /app/target/quarkus-app
+COPY lib/ojdbc8.jar /app/lib/ojdbc8.jar
 
 EXPOSE 8080
-
-CMD ["java", "-jar", "app.jar"]
+CMD ["sh", "-c", "java -cp /app/lib/ojdbc8.jar:/app/target/quarkus-app/quarkus-run.jar io.quarkus.bootstrap.runner.QuarkusEntryPoint"]
