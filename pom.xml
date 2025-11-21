@@ -31,7 +31,15 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-        </dependencies>
+        
+    <dependency>
+      <groupId>com.oracle</groupId>
+      <artifactId>ojdbc8</artifactId>
+      <version>19.3.0.0</version>
+      <scope>runtime</scope>
+    </dependency>
+
+</dependencies>
     </dependencyManagement>
 
     <dependencies>
@@ -69,7 +77,15 @@
             <scope>test</scope>
         </dependency>
 
-    </dependencies>
+    
+    <dependency>
+      <groupId>com.oracle</groupId>
+      <artifactId>ojdbc8</artifactId>
+      <version>19.3.0.0</version>
+      <scope>runtime</scope>
+    </dependency>
+
+</dependencies>
 
     <build>
         <plugins>
@@ -101,3 +117,19 @@
     </build>
 
 </project>
+
+<!-- NOTE: Nenhum driver JDBC óbvio (Oracle/Postgres/MySQL) foi encontrado no pom.xml.
+If your database is PostgreSQL or MySQL, add the corresponding dependency:
+PostgreSQL example:
+<dependency>
+  <groupId>org.postgresql</groupId>
+  <artifactId>postgresql</artifactId>
+  <version>42.5.0</version>
+</dependency>
+MySQL example:
+<dependency>
+  <groupId>mysql</groupId>
+  <artifactId>mysql-connector-java</artifactId>
+  <version>8.0.33</version>
+</dependency>
+For Oracle, see README_DEPLOY.md on how to provide ojdbc jar. -->
