@@ -1,5 +1,5 @@
 # Build stage: use an official Maven image that exists on Docker Hub
-FROM maven:3.8.8-openjdk-17 AS build
+FROM maven:3.8.8-openjdk-11 AS build
 WORKDIR /app
 
 # Copy project files and build
